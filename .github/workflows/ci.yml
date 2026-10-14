@@ -1,25 +1,41 @@
-name: CI Pipeline
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, another-feature ]
   pull_request:
     branches: [ main ]
 
 jobs:
-  build:
+  build-job:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.13'
+      - name: Create build artifact
+        run: |
+          mkdir -p output
+          echo "Hello from Build Job!" > output/artifact.txt
+          echo "Build completed successfully at $(date)" >> output/artifact.txt
 
-    - name: Run a simple check
-      run: |
-        echo "Running CI/CD checks..."
-        python --version
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-results
+          path: output/artifact.txt
+
+  test-job:
+    needs: build-job
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact from previous job
+        uses: actions/download-artifact@v4
+        with:
+          name: build-results
+
+      - name: Process received data
+        run: |
+          echo "Received artifact content:"
+          cat artifact.txt
+          echo "Test Job executed successfully using previous job data!"
